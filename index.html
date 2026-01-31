@@ -368,6 +368,47 @@
             text-align: center;
         }
 
+        /* Source & Confidence */
+        .source-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid #f3f4f6;
+        }
+
+        .source-tag {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            background: #f3f4f6;
+            padding: 0.3rem 0.65rem;
+            border-radius: 6px;
+            line-height: 1.4;
+        }
+
+        .conf-tag {
+            font-size: 0.78rem;
+            padding: 0.3rem 0.65rem;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        .conf-high {
+            background: #ecfdf5;
+            color: #065f46;
+        }
+
+        .conf-medium {
+            background: #fffbeb;
+            color: #92400e;
+        }
+
+        .conf-low {
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
         /* Error State */
         .error-msg {
             background: #fef2f2;
@@ -531,13 +572,18 @@
                 '  "phosphorus_range": "每100g的磷含量範圍，例如 約200-250mg",\n' +
                 '  "advice": "給腎臟病患者的磷攝取飲食建議，50字以內",\n' +
                 '  "cooking_tip": "降低磷含量的烹調或選擇建議，30字以內，若無則填空字串",\n' +
-                '  "phosphorus_type": "有機磷 或 無機磷 或 植物性磷，說明磷的吸收率差異"\n' +
+                '  "phosphorus_type": "有機磷 或 無機磷 或 植物性磷，說明磷的吸收率差異",\n' +
+                '  "data_source": "數據來源，例如：台灣FDA食品營養成分資料庫、USDA FoodData Central 等",\n' +
+                '  "confidence": "high 或 medium 或 low，代表你對這個磷含量數據的把握程度"\n' +
                 '}\n\n' +
                 '磷含量分級標準：低磷 < 100mg/100g、中磷 100-250mg/100g、高磷 > 250mg/100g。\n' +
                 '重要提醒：\n' +
+                '- 請優先參考「衛福部食藥署食品營養成分資料庫」或「USDA FoodData Central」的數據。\n' +
+                '- 以下是部分台灣FDA已驗證的磷含量參考值（mg/100g）：米飯39、雞蛋185、蛋黃515、豬梅花肉151、雞腿165、牛腩177、鮭魚252、蝦仁218、傳統豆腐111、黃豆396、花生389、起司505、牛奶93、菠菜49、高麗菜28、蘋果40、香蕉22、白土司119、燕麥424、巧克力308。\n' +
                 '- 加工食品（如火腿、香腸、泡麵、汽水）含大量無機磷添加劑，吸收率高達90-100%，應特別警示。\n' +
                 '- 動物性蛋白質的有機磷吸收率約40-60%。\n' +
                 '- 植物性食物的磷吸收率較低，約20-40%。\n' +
+                '- confidence 判斷標準：若數據來自官方資料庫且食物辨識明確則為 high；若為估算或食物辨識不太確定則為 medium；若為大略推測則為 low。\n' +
                 '如果照片中沒有食物，請回傳：{"error": "未偵測到食物，請將相機對準食材再試一次"}';
 
             var body = {
@@ -549,7 +595,7 @@
                 }],
                 generationConfig: {
                     temperature: 0.2,
-                    maxOutputTokens: 600
+                    maxOutputTokens: 800
                 }
             };
 
@@ -642,6 +688,32 @@
                 html += '<div class="detail-row">';
                 html += '<span class="icon">🍳</span>';
                 html += '<span class="text"><strong>飲食建議：</strong>' + escapeHtml(result.cooking_tip) + '</span>';
+                html += '</div>';
+            }
+
+            // Data source and confidence
+            if (result.data_source || result.confidence) {
+                html += '<div class="source-info">';
+                if (result.data_source) {
+                    html += '<span class="source-tag">📋 ' + escapeHtml(result.data_source) + '</span>';
+                }
+                if (result.confidence) {
+                    var confLabel, confClass;
+                    switch (result.confidence) {
+                        case 'high':
+                            confLabel = '可信度：高';
+                            confClass = 'conf-high';
+                            break;
+                        case 'medium':
+                            confLabel = '可信度：中';
+                            confClass = 'conf-medium';
+                            break;
+                        default:
+                            confLabel = '可信度：低（僅供參考）';
+                            confClass = 'conf-low';
+                    }
+                    html += '<span class="conf-tag ' + confClass + '">' + confLabel + '</span>';
+                }
                 html += '</div>';
             }
 
